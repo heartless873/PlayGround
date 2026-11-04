@@ -171,7 +171,7 @@ wall(-4,-5.5,0.25,3.0); wall(-4,-1.4,0.25,1.8);
 // living/kitchen divider x=4 gap z -3.2..-1.8
 wall(4,-5.5,0.25,3.0); wall(4,-1.2,0.25,1.5);
 // hallway north wall z=1, gaps for living (x -3..-1), kitchen door at x=4, study at x=7
-wall(-5,1,6,0.25); wall(5,1,6,0.25); wall(0.5,1,3.5,0.25);
+wall(-5,1,6,0.25); wall(3.5,1,4.5,0.25); wall(8.5,1,3.5,0.25); wall(0.5,1,3.5,0.25);
 // hallway south wall z=3, hidden-copy door at x=0 initially closed wall
 wall(-4,3,5.5,0.25); wall(4,3,5.5,0.25);
 const hiddenDoorWall=wall(0,3,2.5,0.25,2.8,MAT.wall2); hiddenDoorWall.userData.id='hiddenDoor';
@@ -187,7 +187,7 @@ function furniture(){
   // bedroom
   box(-8.5,0.4,-6.2,1.9,0.5,2.2,MAT.wood); box(-8.5,0.9,-6.2,1.9,0.15,2.2,MAT.fabric); box(-9.7,0.8,-6.2,0.15,1.1,2.2,MAT.wood);
   box(-5.2,0.9,-6.6,1.8,1.4,0.4,MAT.wood); // dresser
-  box(-9.8,1.0,-3.5,0.3,2.0,1.0,MAT.wood); // closet
+  // closet = hide1 interactable (registered later)
   // living
   box(0,0.45,-5,3.2,0.5,1.0,MAT.fabric); box(-1.6,0.9,-5.4,1.0,1.0,0.3,MAT.fabric); box(1.6,0.9,-5.4,1.0,1.0,0.3,MAT.fabric);
   box(0,0.35,-3.8,1.6,0.4,0.8,MAT.wood);
@@ -196,7 +196,7 @@ function furniture(){
   // kitchen
   box(9.5,0.9,-6.5,1.2,0.9,2.4,MAT.wood); box(9.2,0.9,-3,1.8,0.9,0.6,MAT.wood); box(6,0.9,-6.8,2.0,0.9,0.6,MAT.wood);
   // study
-  box(9.5,0.9,2,1.2,0.9,2.0,MAT.wood); box(9.9,1.0,0.2,0.2,2.0,1.2,MAT.wood);
+  box(9.5,0.9,2.5,1.2,0.9,1.6,MAT.wood); box(9.9,1.0,4.5,0.2,2.0,1.2,MAT.wood);
   // copy living (south)
   box(0,0.45,5.5,3.2,0.5,1.0,MAT.fabric); box(-1.6,0.9,5.1,1.0,1.0,0.3,MAT.fabric); box(1.6,0.9,5.1,1.0,1.0,0.3,MAT.fabric);
   box(0,1.0,6.85,2.4,1.8,0.15,MAT.dark);
@@ -209,8 +209,11 @@ function makeDoor(id,x,z,ry,width=1.0){
   const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=ry; scene.add(g);
   const m=box(0,1.1,0,width,2.2,0.08,MAT.wood,g); m.userData={interact:true,id,label:'Open door'};
   // Actually collider handled separately: add door collider removed when open
-  const col={x1:x-width/2-0.1,x2:x+width/2+0.1,z1:z-0.2,z2:z+0.2,temp:true};
-  if(Math.abs(Math.sin(ry))>0.5){ col.x1=x-0.2;col.x2=x+0.2;col.z1=z-width/2;col.z2=z+width/2; }
+  // door group is rotated ry; door leaf spans local X. world collider must match facing.
+  const isNS = Math.abs(Math.cos(ry))>0.5; // door plane faces along Z (ry=0 or PI) -> narrow X, long Z
+  let col;
+  if(isNS){ col={x1:x-0.2,x2:x+0.2,z1:z-width/2-0.1,z2:z+width/2+0.1,temp:true}; }
+  else { col={x1:x-width/2-0.1,x2:x+width/2+0.1,z1:z-0.2,z2:z+0.2,temp:true}; }
   colliders.push(col);
   const d={id,group:g,open:false,col,baseY:ry};
   doors.push(d); return d;
@@ -218,8 +221,8 @@ function makeDoor(id,x,z,ry,width=1.0){
 makeDoor('bedroomDoor',-4,-3.5,0);
 makeDoor('bathDoor',-6,0,Math.PI/2);
 makeDoor('livingDoor',-1,1,0);
-makeDoor('kitchenDoor',7,0.5,0);
-makeDoor('studyDoor',7,1,0);
+makeDoor('kitchenDoor',6.6,1,0);
+makeDoor('studyDoor',7,2,Math.PI/2);
 
 // front door (east end hallway)
 const frontDoorGroup=new THREE.Group(); frontDoorGroup.position.set(10.2,0,2); scene.add(frontDoorGroup);
@@ -272,7 +275,7 @@ const drawer2=box(6,0.95,-6.8,2.0,0.2,0.7,MAT.wood); drawer2.userData={interact:
 // diary bedroom
 const diaryMesh=box(-9.8,0.85,-6.2,0.4,0.08,0.5,new THREE.MeshStandardMaterial({color:0x3a1010})); reg(diaryMesh,'diary','Read diary',()=>{
   toast('Diary, your handwriting: “Day 41. It sits on my sofa. I have proof now.”');
-  if(!S.evidenceMark){ S.evidenceMark={diary:true}; S.evidence=1; updateEvidenceUI(); }
+  S.evidenceMark={...(S.evidenceMark||{}),diary:true}; updateEvidenceUI();
   setTimeout(()=>addMsg('them','That diary isn\'t yours. But you wrote it anyway. Keep going.'),2000);
 });
 // breaker study
@@ -349,7 +352,7 @@ function queuePhone(n){
 function togglePhone(force){
   phoneOpen = force!==undefined?force:!phoneOpen;
   phoneEl.style.display=phoneOpen?'flex':'none';
-  if(phoneOpen){ badge.style.display='none'; badge.classList.remove('has'); document.exitPointerLock&&document.exitPointerLock(); }
+  if(phoneOpen){ badge.style.display='none'; badge.classList.remove('has'); suppressPauseUntil=Date.now()+400; document.exitPointerLock&&document.exitPointerLock(); }
   else if(S.started && !S.ended){ lockPointer(); }
 }
 document.getElementById('phoneClose').onclick=()=>togglePhone(false);
@@ -370,7 +373,7 @@ addEventListener('keydown',e=>{
   if(e.key.toLowerCase()==='f' && S.hasTorch){ S.lightOn=!S.lightOn; flash.intensity=S.lightOn?2.2:0; toast(S.lightOn?'Flashlight on.':'Flashlight off.'); if(S.lightOn) S.tenantAwareness=Math.max(0,S.tenantAwareness-2); else S.tenantAwareness+=2; }
   if(e.key.toLowerCase()==='e'){ tryInteract(); }
   if(e.key.toLowerCase()==='c'){ S.sneak=!S.sneak; toast(S.sneak?'Sneaking — quiet.':'Standing.'); }
-  if(e.key==='Escape' && S.started && !S.ended){ showPause(); }
+  if(e.key==='Escape' && S.started && !S.ended && !phoneOpen){ showPause(); }
 });
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 addEventListener('mousemove',e=>{
@@ -391,8 +394,12 @@ addEventListener('mousemove',e=>{
   S.lastYawDelta=delta;
 });
 function lockPointer(){ try{ const r=canvas.requestPointerLock()||Promise.resolve(); r.catch?.(()=>{}); }catch(e){} }
+let suppressPauseUntil=0;
 document.addEventListener('pointerlockchange',()=>{
-  if(!document.pointerLockElement && S.started && !S.ended && !phoneOpen){ /* show pause hint if not in phone */ }
+  if(!document.pointerLockElement && S.started && !S.ended && !phoneOpen && !S.paused){
+    if(Date.now()<suppressPauseUntil) return;
+    showPause();
+  }
 });
 
 // touch
@@ -544,13 +551,12 @@ function endGame(kind){
 
 // ============ ROOM DETECTION & LEARNING EVENTS ============
 function roomFromPos(x,z){
-  if(x<-4 && z<-2) return 'bedroom';
-  if(x<-6 && z>=-2 && z<3) return 'bathroom';
-  if(x>-4 && x<4 && z<-0) return 'living';
-  if(x>=4 && z<-1) return 'kitchen';
-  if(x>=4 && z>=-1) return 'study';
-  if(z>1 && z<3) return 'hallway';
   if(z>=3) return 'copy';
+  if(x<-6 && z>=-1.5 && z<3) return 'bathroom';
+  if(x<-4 && z<-1.5) return 'bedroom';
+  if(x>4 && z<1) return 'kitchen';
+  if(x>4 && z>=1) return 'study';
+  if(x>-4 && x<=4 && z<1) return 'living';
   return 'hallway';
 }
 function triggerBehindManifest(){
@@ -586,13 +592,13 @@ function scheduledEvents(dt){
     for(let i=0;i<4;i++) setTimeout(()=>playStep(0.15,true,tenant.position), i*420);
     showSubtitle('— footsteps follow you. Sometimes they match your rhythm exactly. —');
   }
-  // hallway longer (once)
-  if(!S.hallwayLong && profile.roomTime.hallway>25){
-    S.hallwayLong=true; hiddenDoorWall.position.z=3.6; wall(0,7,21,0.3); // crude stretch visual
+  // hallway longer (once) — visual stretch: move south walls outward
+  if(!S.hallwayLong && (profile.roomTime.hallway||0)>25){
+    S.hallwayLong=true; hiddenDoorWall.position.z=3.6; wall(0,7,21,0.3); // visual stretch echo
     playCreak(); toast('The hallway is longer than it was. You are certain. You took a photo. The photo shows the same length.'); updateUnease(S.unease+6);
   }
   // phases
-  if(!S.power && S.phase>=2 && profile.glances>=2) queuePhone(2);
+  if(!S.power && S.phase>=2 && profile.glances>=2 && !S._q2){ S._q2=true; queuePhone(2); }
   if(S.copySeen && S.doublePhase===1 && profile.roomTime.copy>8 && !S.doublePhase2Triggered){ S.doublePhase2Triggered=true; setTimeout(()=>triggerDouble(2),2000); }
   // tenant glimpses in hallway end
   if(S.roomNow==='hallway' && Math.random()<dt*0.03 && S.tenantVisible<30){
@@ -656,8 +662,9 @@ function updatePlayer(dt){
 }
 function updateInteract(){
   raycaster.setFromCamera({x:0,y:0},camera); raycaster.far=3.2;
-  const objs=[...scene.children].filter(o=>o.userData&&o.userData.interact);
-  const hit=raycaster.intersectObjects(objs,true)[0];
+  const objs=[];
+  scene.traverse(o=>{ if(o.userData&&o.userData.interact && o.visible) objs.push(o); });
+  const hit=raycaster.intersectObjects(objs,false)[0];
   const prompt=document.getElementById('prompt');
   if(hit){ let o=hit.object; while(o && !(o.userData&&o.userData.interact)) o=o.parent; currentInteract=o; prompt.textContent=o?.userData?.label||''; prompt.style.display='block'; }
   else { currentInteract=null; prompt.style.display='none'; }
@@ -677,7 +684,7 @@ function animate(){
     updateInteract();
     // flashlight flicker at high unease; hallway lights flicker when trusted
     if(S.lightOn) flash.intensity=2.2 + (Math.random()<0.02?-1.5:0);
-    if(S.roomNow==='hallway' && roomLights[3] && Math.random()<0.02) roomLights[3].intensity=0.1; else if(roomLights[3] && roomLights[3].intensity<0.4 && S.roomNow!=='hallway') roomLights[3].intensity=0.6;
+    if(S.roomNow==='hallway' && roomLights[3] && Math.random()<0.02) roomLights[3].intensity=0.1 + Math.random()*0.3; else if(roomLights[3] && S.roomNow!=='hallway') roomLights[3].intensity=0.9;
   }
   renderer.render(scene,camera);
 }
