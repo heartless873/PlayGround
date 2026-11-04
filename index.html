@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Elias — The Crash Memory</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui,Arial,sans-serif;color:#d8e8ff}
+#c{display:block;width:100%;height:100%}
+.hud{position:absolute;left:12px;top:12px;background:rgba(3,8,20,.55);border:1px solid #2b6a7a;padding:10px 12px;border-radius:10px;backdrop-filter:blur(6px);max-width:360px}
+.hud b{color:#8affd8}.bar{height:8px;background:#10212b;border-radius:99px;overflow:hidden;margin:6px 0 2px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#21ffd5,#ff5470)}
+.tag{font-size:12px;opacity:.9;line-height:1.35}
+#center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;font-size:22px;text-shadow:0 0 8px #000}
+#overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(0,0,0,.2),rgba(0,0,0,.92));text-align:center;padding:20px;box-sizing:border-box}
+button{background:#7cffea;color:#000;font-weight:800;border:0;padding:13px 20px;border-radius:99px;font-size:16px;cursor:pointer}
+.hidden{display:none!important}
+.controls{position:absolute;right:12px;top:12px;background:rgba(8,10,20,.55);padding:8px 10px;border-radius:10px;font-size:12px;line-height:1.5;max-width:200px}
+#mobile{position:absolute;left:0;right:0;bottom:0;display:none;justify-content:space-between;padding:12px;pointer-events:none}
+body.touch #mobile{display:flex} body.touch .controls{display:none}
+#stick,#btns{pointer-events:auto}
+#stick{width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid #8affd8;position:relative}
+#nub{position:absolute;width:36px;height:36px;border-radius:50%;background:#8affd8;left:27px;top:27px}
+.mbtn{margin:4px;background:rgba(20,30,50,.7);color:#fff;border:1px solid #8affd8;padding:11px;border-radius:99px}
+@media(max-width:700px){.hud{max-width:52vw}.controls{display:none}}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud" class="hud hidden"><b>ELIAS</b> <span id="obj">Find the Archive — accept the truth</span><div>Stumble meter <div class="bar"><i id="st"></i></div>Entity distance <span id="d">--</span>m</div><div class="tag" id="msg">Your footprints glow. Don't let Him consume them.</div></div>
+<div class="controls"><b>Controls</b><br>WASD move • Mouse look<br><b>SPACE / CLICK — Blink</b> (flips gravity, pulses echo)<br>SHIFT sprint • F flashlight<br>Sonic echo reveals walls & Him. Blink to stepson echoes.</div>
+<div id="center"></div>
+<div id="mobile"><div id="stick"><div id="nub"></div></div><div id="btns"><button class="mbtn" id="btnBlink">BLINK</button><button class="mbtn" id="btnRun">RUN</button></div></div>
+<div id="overlay"><h1 style="font-size:34px;letter-spacing:2px">ELIAS</h1><p style="max-width:620px;line-height:1.5">You died in the crash. Now you walk the memory where it happened. Blink and gravity turns — floors become ceilings, walls become floors. Glowing sonic echoes mark what was real. His footprints are what He eats to find you. Reach the Archive door, accept that you are dead, and let Him go.</p><p style="font-size:13px;opacity:.8">WASD + mouse • Space to blink (gravity flip + echo pulse) • Sprint Shift</p><button id="playBtn">ENTER THE MEMORY</button><p id="endMsg" style="color:#8affd8"></p></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+const c=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas:c,antialias:true});
+renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x01030a);scene.fog=new THREE.FogExp2(0x060a18,.045);
+const camera=new THREE.PerspectiveCamera(74,innerWidth/innerHeight,.1,120);
+scene.add(new THREE.AmbientLight(0x2a3a5a,1.2));
+const spot=new THREE.SpotLight(0xfff0b0,80,30,.5,.4);spot.position.set(0,0,0);scene.add(spot);scene.add(spot.target);
+const echoLight=new THREE.PointLight(0x00ffd5,0,18);
+scene.add(echoLight);
+const heartOsc=new THREE.OscillatorNode&&new THREE.AudioContext; // optional sound
+let actx=null;
+function ping(f=420){try{if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.15,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+.6);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+.6);}catch(e){}}
+// World: elongated memory hall 80 x 10 x 14, rooms feel larger with gravity flips
+const walls=new THREE.Group();scene.add(walls);
+function box(x,y,z,w,h,d,col,emiss=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:col,roughness:.9,emissive:emiss?0x00ffd5:0x000000,emissiveIntensity:emiss}));m.position.set(x,y,z);walls.add(m);return m}
+// Floor/walls
+box(0,-.5,0,80,1,14,0x0a1620,0); box(0,10.5,0,80,1,14,0x0d1b28,.6); // ceiling echoes
+for(let i=-40;i<=40;i+=4){box(i,.5,-7,4,11,.5,0x112331);box(i,.5,7,4,11,.5,0x112331);}
+box(-40,5,0,1,11,14,0x14324a); box(40,5,0,1,11,14,0x14324a);
+// pillars as echo markers (objects that leave echoes)
+const pillars=[];for(let i=-36;i<=36;i+=8){const p=box(i,2.5,0,1.2,5,1.2,0x1a3d55,.3);pillars.push(p);}
+// car
+const car=new THREE.Group();car.position.set(20,1,0);
+const body=new THREE.Mesh(new THREE.BoxGeometry(4,.8,1.6),new THREE.MeshStandardMaterial({color:0x889,roughness:.3,metalness:.7}));body.position.y=.7;car.add(body);
+const cab=new THREE.Mesh(new THREE.BoxGeometry(2,.7,1.4),new THREE.MeshStandardMaterial({color:0x223344}));cab.position.set(-.2,1.4,0);car.add(cab);
+const wheelGeo=new THREE.CylinderGeometry(.35,.35,.3,12);
+for(const [wx,wz] of [[-1.5,.8],[1.5,.8],[-1.5,-.8],[1.5,-.8]]){const w=new THREE.Mesh(wheelGeo,new THREE.MeshStandardMaterial({color:0x111}));w.rotation.x=Math.PI/2;w.position.set(wx,.35,wz);car.add(w);}
+car.rotation.z=.3;scene.add(car);
+// archive door at far end (green)
+const archive=box(-38,3.5,0,1,7,4,0x00c98a,1.5);
+// entity: invisible except near footprints / echo
+const entity=new THREE.Mesh(new THREE.SphereGeometry(.9,20,20),new THREE.MeshStandardMaterial({color:0x000000,transparent:true,opacity:0}));entity.position.set(35,1,0);scene.add(entity);
+const entityLight=new THREE.PointLight(0xff1133,0,10);entityLight.position.copy(entity.position);scene.add(entityLight);
+const footprints=[];let fpGroup=new THREE.Group();scene.add(fpGroup);
+let started=false,blinkT=0,echoT=0,fps=0,bob=0,bump=0;
+let player=new THREE.Vector3(34,0,0);let yaw=0,pitch=0,gravityAxis=0;let keys={};let distToArchive=0,stumble=20;
+let flash=true;
+function gravityVec(){if(gravityAxis==0)return new THREE.Vector3(0,-1,0);if(gravityAxis==1)return new THREE.Vector3(0,1,0);if(gravityAxis==2)return new THREE.Vector3(1,0,0);return new THREE.Vector3(-1,0,0);}
+function updateGravity(){
+  const g=gravityVec(); const up=g.clone().negate();
+  // orient camera up to -gravity
+  const m=new THREE.Matrix4().lookAt(new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-1),up);
+  const q=new THREE.Quaternion().setFromRotationMatrix(m);
+  camera.quaternion.copy(q);
+  // apply yaw/pitch in local space via parent? simpler: rotate camera around up
+  camera.rotateY(yaw); camera.rotateX(pitch);
+  player.addScaledVector(g,-0.06); // fall
+  // clamp inside box depending gravity
+  player.x=Math.max(-38,Math.min(38,player.x)); player.y=Math.max(0.5,Math.min(9,player.y)); player.z=Math.max(-6.5,Math.min(6.5,player.z));
+  if(gravityAxis==0)player.y=Math.max(player.y,0.6); if(gravityAxis==1)player.y=Math.min(player.y,9.4);
+  if(gravityAxis>=2){} // walls: clamp keeps inside
+  camera.position.copy(player); camera.position.y+=Math.sin(bob)*0.04;
+  spot.position.copy(camera.position); const look=new THREE.Vector3();camera.getWorldDirection(look);spot.target.position.copy(camera.position).add(look.multiplyScalar(5));
+  echoLight.position.copy(camera.position);
+}
+function doEcho(){ echoT=1; echoLight.intensity=40; ping(380); walls.traverse(o=>{if(o.isMesh)o.material.emissiveIntensity=o.material.emissiveIntensity||0.4;}); }
+function blink(){ if(!started)return; blinkT=1; echoLight.intensity=60; ping(220); gravityAxis=(gravityAxis+1)%4; doEcho(); }
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code=='Space'){e.preventDefault();blink();}if(e.code=='KeyF'){flash=!flash;spot.visible=flash;}});
+addEventListener('keyup',e=>keys[e.code]=false);
+addEventListener('pointerlockchange',()=>{});
+let lookEl=0;
+document.getElementById('playBtn').onclick=()=>{document.body.classList.add('touch');document.getElementById('overlay').classList.add('hidden');document.getElementById('hud').classList.remove('hidden');started=true;c.requestPointerLock&&c.requestPointerLock();};
+c.addEventListener('click',()=>{if(started&&!document.pointerLockElement)c.requestPointerLock();});
+document.addEventListener('mousemove',e=>{if(document.pointerLockElement){yaw-=e.movementX*0.002;pitch=Math.max(-1.2,Math.min(1.2,pitch-e.movementY*0.002));}});
+c.addEventListener('mousedown',e=>{if(e.button==0&&started)blink();});
+let touchMove={x:0,y:0};
+let stick=document.getElementById('stick'),nub=document.getElementById('nub');
+stick.addEventListener('touchmove',e=>{const t=e.touches[0],r=stick.getBoundingClientRect();let dx=t.clientX-r.left-45,dy=t.clientY-r.top-45;touchMove.x=dx/35;touchMove.y=dy/35;nub.style.left=27+dx+'px';nub.style.top=27+dy+'px';},{passive:true});
+document.getElementById('btnBlink').onclick=blink;
+document.getElementById('btnRun').onclick=()=>{keys['ShiftLeft']=!keys['ShiftLeft'];ping(520);};
+let eid=null;
+function spawnFootprint(){ const fg=new THREE.Mesh(new THREE.PlaneGeometry(.3,.5),new THREE.MeshBasicMaterial({color:0x7cffea,transparent:true,opacity:.85})); fg.position.set(player.x,player.y-.55,player.z); if(gravityAxis==1)fg.position.y=player.y+.55; fg.rotation.x=-Math.PI/2; if(gravityAxis==1)fg.rotation.x=Math.PI/2; if(gravityAxis==2){fg.rotation.set(0,Math.PI/2,0);fg.position.x+=.6} if(gravityAxis==3){fg.rotation.set(0,-Math.PI/2,0);fg.position.x-=.6} fpGroup.add(fg); footprints.push({m:fg,life:1,age:0}); if(footprints.length>40)footprints.shift().m.parent?.remove(footprints[0].m); }
+let lastX=0,lastZ=0,claw=0;
+function loop(){
+  requestAnimationFrame(loop);
+  if(!started){camera.position.set(0,4,8);camera.lookAt(0,1,0);renderer.render(scene,camera);return;}
+  // movement relative to camera yaw
+  let mx=0,mz=0;
+  if(keys['KeyW'])mz-=1; if(keys['KeyS'])mz+=1; if(keys['KeyA'])mx-=1; if(keys['KeyD'])mx+=1;
+  mx+=touchMove.x; mz+=touchMove.y;
+  const run=(keys['ShiftLeft']||keys['ShiftRight'])?1.7:1;
+  const speed=4.5*run;
+  // forward from yaw (projected)
+  const fwd=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+  const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+  player.addScaledVector(fwd,-mz*speed*0.016); player.addScaledVector(right,mx*speed*0.016);
+  const dXZ=Math.hypot(player.x-lastX,player.z-lastZ);
+  if(dXZ>0.11){ spawnFootprint(); fps=0; }
+  if(dXZ>0.11){lastX=player.x;lastZ=player.z; bob+=.25;}
+  // footsteps fade
+  footprints.forEach(f=>{f.age+=0.008; f.m.material.opacity=Math.max(0,.85-f.age*1.2);});
+  // entity hunts: prefers following oldest footprint then player
+  let target=player.clone();
+  let hunt=footprints.find(f=>f.age>0.8&&f.m.material.opacity>0.05);
+  if(hunt)target.set(hunt.m.position.x,hunt.m.position.y,hunt.m.position.z);
+  const dir=target.clone().sub(entity.position); const dist=dir.length();
+  dir.normalize(); entity.position.addScaledVector(dir,0.045*run*0.9);
+  entity.position.y=Math.max(0.7,Math.min(9,entity.position.y));
+  // reveal entity near echolocation and near footprints
+  entity.material.opacity += ((dist<5||echoT>0.5||blinkT>0.5)?0.5:0)-entity.material.opacity*0.1;
+  entity.material.opacity=Math.max(0,Math.min(.6,entity.material.opacity));
+  entityLight.intensity= entity.material.opacity*20; entityLight.position.copy(entity.position);
+  document.getElementById('d').textContent=dist.toFixed(1);
+  document.getElementById('st').style.width=Math.min(100,100-dist*4)+'%';
+  document.getElementById('msg').textContent= dist<3?'HE SMELLS YOU—BLINK TO FLIP GRAVITY': dist<7?'He is consuming your past':'The Archive hums ahead — walk light, blink often';
+  // archive win
+  distToArchive=player.distanceTo(new THREE.Vector3(-38,3.5,0));
+  if(distToArchive<1.6){
+    document.getElementById('endMsg').textContent='You accepted the truth: the crash killed you. The archive opens. Elias is free.';
+    document.getElementById('center').textContent='✨ YOU ESCAPED. EL WASN\'T CAUGHT ✨';
+    started=false; document.getElementById('overlay').classList.remove('hidden'); document.getElementById('overlay').style.background='rgba(0,20,15,.8)';
+  }
+  if(dist<1.2){ document.getElementById('endMsg').textContent='He consumed you. Try blinking to flip gravity and lose Him.'; document.getElementById('center').textContent='☠ CONSUMED'; started=false; document.getElementById('overlay').classList.remove('hidden'); }
+  // blink visual
+  blinkT=Math.max(0,blinkT-0.02); echoT=Math.max(0,echoT-0.015);
+  const fade=Math.max(0,blinkT); renderer.setClearColor(blinkT>0.7?0xffffff:0x01030a);
+  echoLight.intensity*=0.92;
+  // heartbeat vibration camera shake when close
+  if(dist<4)camera.position.x+=(Math.random()-.5)*0.05;
+  updateGravity();
+  renderer.render(scene,camera);
+}
+loop();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script></body></html>
