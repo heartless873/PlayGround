@@ -3,74 +3,78 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>You Were Never Alone — Crouton Alpha</title>
+<title>You Were Never Alone</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#d8d8d8;font-family:Georgia,'Times New Roman',serif}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#d8d8d8;font-family:'Inter',system-ui,sans-serif}
   #c{position:fixed;inset:0;display:block}
-  /* film grain + vignette */
-  #grain{position:fixed;inset:-50%;width:200%;height:200%;pointer-events:none;opacity:.07;z-index:5;background-image:repeating-conic-gradient(#fff 0 .0001%,transparent .0002% 12%);animation:g .4s steps(4) infinite}
+  #grain{position:fixed;inset:-50%;width:200%;height:200%;pointer-events:none;opacity:.045;z-index:5;background-image:repeating-conic-gradient(#fff 0 .0001%,transparent .0002% 12%);animation:g .5s steps(4) infinite}
   @keyframes g{0%{transform:translate(0,0)}25%{transform:translate(-2%,1%)}50%{transform:translate(1%,-2%)}75%{transform:translate(-1%,2%)}100%{transform:translate(2%,-1%)}}
-  #vignette{position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,transparent 52%,rgba(0,0,0,.85) 100%);transition:opacity .6s}
-  #fear{position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,transparent 30%,rgba(20,0,0,.9) 100%);opacity:0}
+  #vignette{position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.9) 100%)}
+  #fear{position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,transparent 25%,rgba(30,0,0,.92) 100%);opacity:0;transition:opacity .8s}
   #hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:none}
-  #cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);box-shadow:0 0 4px #000}
-  #prompt{position:absolute;left:50%;top:58%;transform:translateX(-50%);background:rgba(0,0,0,.75);border:1px solid #555;padding:6px 14px;font-size:15px;letter-spacing:.5px;display:none;white-space:nowrap}
-  #objective{position:absolute;left:18px;top:16px;max-width:360px;background:rgba(0,0,0,.55);border-left:3px solid #8a0f0f;padding:10px 14px;font-size:14px;line-height:1.5}
-  #objective b{color:#c33;font-size:11px;letter-spacing:2px;display:block;margin-bottom:4px}
-  #inv{position:absolute;left:18px;bottom:16px;background:rgba(0,0,0,.55);padding:8px 12px;font-size:13px;line-height:1.6}
-  #inv b{color:#999;font-size:10px;letter-spacing:2px}
-  #unease{position:absolute;right:18px;top:16px;text-align:right;font-size:11px;letter-spacing:2px;color:#999}
-  #uneaseBar{width:160px;height:5px;background:#222;margin-top:4px;margin-left:auto;border:1px solid #444}
-  #uneaseFill{height:100%;width:0;background:#8a0f0f;transition:width .5s}
-  #hint{position:absolute;right:18px;bottom:16px;font-size:12px;color:#888;text-align:right;line-height:1.6}
-  #toast{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid #333;padding:12px 22px;font-size:17px;font-style:italic;text-align:center;max-width:80%;display:none}
-  #subtitle{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);font-size:15px;font-style:italic;color:#bbb;text-shadow:0 2px 4px #000;text-align:center;max-width:80%}
-  /* phone */
-  #phone{position:fixed;right:22px;bottom:22px;width:300px;height:520px;background:#0a0a0a;border:3px solid #333;border-radius:28px;z-index:20;display:none;flex-direction:column;box-shadow:0 0 40px #000;overflow:hidden}
-  #phoneHeader{background:#111;padding:12px 16px;border-bottom:1px solid #222;display:flex;justify-content:space-between;align-items:center}
-  #phoneHeader b{font-size:14px;letter-spacing:1px}
-  #phoneHeader span{font-size:11px;color:#c33}
-  #phoneTime{text-align:center;font-size:28px;padding:10px 0 2px}
-  #phoneDate{text-align:center;font-size:11px;color:#888;padding-bottom:8px}
-  #msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:#050505}
-  .msg{align-self:flex-start;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px 12px 12px 2px;padding:8px 12px;font-size:13px;line-height:1.45;max-width:88%}
-  .msg .t{font-size:10px;color:#c33;display:block;margin-top:4px}
-  .msg.me{align-self:flex-end;background:#12203a;border-radius:12px 12px 2px 12px}
-  .sys{align-self:center;font-size:10px;color:#666;text-align:center}
-  #phoneClose{background:#222;color:#ddd;border:1px solid #444;padding:8px;cursor:pointer;font-family:inherit}
-  #phoneBadge{position:fixed;right:26px;bottom:26px;width:52px;height:52px;border-radius:50%;background:#111;border:2px solid #8a0f0f;color:#fff;z-index:19;display:none;align-items:center;justify-content:center;font-size:22px;cursor:pointer;pointer-events:auto}
-  #phoneBadge.has{animation:pulse 1s infinite}
-  @keyframes pulse{50%{box-shadow:0 0 18px #f00}}
-  /* overlays */
-  .overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0d0d0d 0%,#000 80%);padding:20px}
-  .panel{max-width:720px;width:100%;max-height:92vh;overflow-y:auto;border:1px solid #333;background:rgba(5,5,5,.92);padding:36px 40px;text-align:center}
-  .panel h1{font-size:38px;letter-spacing:4px;font-weight:normal;color:#e8e8e8}
-  .panel h1 span{color:#8a0f0f}
-  .panel h2{font-size:13px;letter-spacing:3px;color:#888;font-weight:normal;margin:8px 0 20px}
-  .panel p{font-size:15px;line-height:1.7;color:#bbb;text-align:left;margin:10px 0}
+  #cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 3px #000}
+  #prompt{position:absolute;left:50%;top:57%;transform:translateX(-50%);background:rgba(8,8,9,.82);border:1px solid rgba(160,150,140,.35);padding:7px 16px;font-size:14px;letter-spacing:.06em;display:none;white-space:nowrap;backdrop-filter:blur(4px)}
+  #prompt b{color:#e0c9a8;font-weight:500}
+  #objective{position:absolute;left:22px;top:20px;max-width:330px;background:linear-gradient(90deg,rgba(6,6,7,.82),rgba(6,6,7,.35));border-left:2px solid #7d1a1a;padding:12px 16px;font-size:13.5px;line-height:1.55;letter-spacing:.01em}
+  #objective b{color:#a83a3a;font-size:10px;letter-spacing:.22em;display:block;margin-bottom:6px;font-weight:600}
+  #inv{position:absolute;left:22px;bottom:20px;background:rgba(6,6,7,.72);padding:10px 14px;font-size:12.5px;line-height:1.7;letter-spacing:.02em}
+  #inv b{color:#8f8578;font-size:9.5px;letter-spacing:.22em;display:block;margin-bottom:4px}
+  #unease{position:absolute;right:22px;top:20px;text-align:right;font-size:9.5px;letter-spacing:.24em;color:#8f8578}
+  #uneaseBar{width:150px;height:3px;background:rgba(255,255,255,.09);margin-top:7px;margin-left:auto}
+  #uneaseFill{height:100%;width:0;background:linear-gradient(90deg,#5c1010,#b03030);transition:width .6s}
+  #hint{position:absolute;right:22px;bottom:20px;font-size:11px;color:#7a746c;text-align:right;line-height:1.9;letter-spacing:.03em}
+  #hint b{color:#b9b0a2;font-weight:500}
+  #toast{position:absolute;left:50%;bottom:19%;transform:translateX(-50%);background:rgba(6,6,7,.88);border:1px solid rgba(160,150,140,.25);padding:14px 26px;font-size:16px;font-family:'Cormorant Garamond',serif;font-style:italic;text-align:center;max-width:70%;display:none;line-height:1.5;backdrop-filter:blur(6px)}
+  #subtitle{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);font-size:14px;font-style:italic;color:#a49a8e;text-shadow:0 2px 8px #000;text-align:center;max-width:80%;letter-spacing:.03em}
+  #wake{position:fixed;inset:0;background:#000;z-index:40;pointer-events:none;transition:opacity 3s;display:none}
+  #phone{position:fixed;right:24px;bottom:24px;width:310px;height:540px;background:#08090b;border:2px solid #2a2a2e;border-radius:30px;z-index:20;display:none;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.9),0 0 0 1px #000;overflow:hidden}
+  #phoneHeader{background:#0d0e11;padding:14px 16px;border-bottom:1px solid #1a1b1f;display:flex;justify-content:space-between;align-items:center}
+  #phoneHeader b{font-size:12px;letter-spacing:.1em;font-weight:500}
+  #phoneHeader span{font-size:10px;color:#8a2b2b;letter-spacing:.05em}
+  #phoneTime{text-align:center;font-size:30px;padding:12px 0 2px;font-weight:300;letter-spacing:.04em}
+  #phoneDate{text-align:center;font-size:10px;color:#7a746c;padding-bottom:10px;letter-spacing:.18em}
+  #msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;background:#060708}
+  .msg{align-self:flex-start;background:#15171c;border:1px solid #202229;border-radius:14px 14px 14px 3px;padding:10px 13px;font-size:13px;line-height:1.5;max-width:88%}
+  .msg .t{font-size:9px;color:#8a2b2b;display:block;margin-top:6px;letter-spacing:.06em}
+  .msg.me{align-self:flex-end;background:#151d2b;border-radius:14px 14px 3px 14px}
+  #phoneClose{background:#15171c;color:#b9b0a2;border:1px solid #2a2c33;padding:7px 10px;cursor:pointer;font-family:inherit;font-size:10px;letter-spacing:.14em}
+  #phoneBadge{position:fixed;right:28px;bottom:28px;width:50px;height:50px;border-radius:50%;background:#0d0e11;border:1px solid #7d1a1a;color:#d8d8d8;z-index:19;display:none;align-items:center;justify-content:center;font-size:19px;cursor:pointer;pointer-events:auto}
+  #phoneBadge.has{animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(160,30,30,.5)}50%{box-shadow:0 0 0 12px rgba(160,30,30,0)}}
+  .overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#0c0d10 0%,#000 75%);padding:20px}
+  .panel{max-width:760px;width:100%;max-height:94vh;overflow-y:auto;border:1px solid rgba(160,150,140,.18);background:rgba(5,6,8,.9);padding:48px 52px;text-align:center;box-shadow:0 40px 120px rgba(0,0,0,.9)}
+  .panel h1{font-family:'Cormorant Garamond',serif;font-size:44px;letter-spacing:.16em;font-weight:300;color:#e6e2da;line-height:1.1}
+  .panel h1 span{color:#8f2424;font-style:italic}
+  .panel h2{font-size:10.5px;letter-spacing:.34em;color:#7a746c;font-weight:400;margin:14px 0 24px}
+  .panel p{font-size:14.5px;line-height:1.8;color:#b3aca1;text-align:left;margin:10px 0}
   .panel .cen{text-align:center}
-  .controls{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;text-align:left;font-size:13px;color:#999;margin:16px 0;line-height:1.7}
-  .controls b{color:#ddd;font-family:monospace}
-  .btn{pointer-events:auto;background:#1a0505;color:#eee;border:1px solid #8a0f0f;padding:13px 38px;font-size:16px;letter-spacing:2px;cursor:pointer;font-family:inherit;margin-top:16px}
-  .btn:hover{background:#8a0f0f}
-  .small{font-size:12px;color:#777;line-height:1.6}
-  #learnedNote{border:1px dashed #444;padding:10px;margin:14px 0;font-size:13px;color:#999;font-style:italic}
+  .quote{font-family:'Cormorant Garamond',serif;font-size:21px!important;font-style:italic;color:#d8b9b9!important;text-align:center!important;line-height:1.55!important;margin:22px 0!important}
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:3px 30px;text-align:left;font-size:12.5px;color:#8f8578;margin:22px 0;line-height:1.9}
+  .controls b{color:#cfc7ba;font-family:'Inter';font-weight:500;letter-spacing:.04em}
+  .btn{pointer-events:auto;background:#12100f;color:#e6e2da;border:1px solid #6e1d1d;padding:15px 44px;font-size:12px;letter-spacing:.24em;cursor:pointer;font-family:inherit;margin-top:20px;transition:background .3s,border-color .3s}
+  .btn:hover{background:#6e1d1d;border-color:#a83030}
+  .small{font-size:11.5px;color:#6b665e;line-height:1.8;letter-spacing:.02em}
+  #learnedNote{border:1px solid rgba(160,150,140,.15);border-left:2px solid #6e1d1d;padding:14px 18px;margin:20px 0;font-size:12.5px;color:#8f8578;font-style:italic;text-align:left;line-height:1.7}
   #endingScreen{display:none}
-  #endingTitle{font-size:30px;letter-spacing:3px;margin-bottom:14px}
-  #endingText{font-size:16px;line-height:1.9;white-space:pre-wrap;text-align:left;color:#ccc}
-  /* touch */
+  #endingTitle{font-family:'Cormorant Garamond',serif;font-size:32px;letter-spacing:.14em;margin-bottom:20px;color:#d8cfc2}
+  #endingText{font-size:15px;line-height:2;white-space:pre-wrap;text-align:left;color:#b3aca1;font-family:'Cormorant Garamond',serif}
+  #loading{position:fixed;inset:0;z-index:50;background:#000;display:flex;align-items:center;justify-content:center;color:#6b665e;font-size:11px;letter-spacing:.3em}
   #touchUI{display:none;position:fixed;inset:0;z-index:15;pointer-events:none}
-  #joy{position:absolute;left:20px;bottom:80px;width:110px;height:110px;border-radius:50%;border:2px solid #555;background:rgba(255,255,255,.06);pointer-events:auto}
-  #joyKnob{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.25)}
-  #tBtns{position:absolute;right:20px;bottom:80px;display:flex;flex-direction:column;gap:10px;pointer-events:auto}
-  .tbtn{width:58px;height:58px;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid #777;color:#fff;font-size:12px}
-  @media(max-width:700px){.panel{padding:22px}.panel h1{font-size:26px}.controls{grid-template-columns:1fr}#objective{max-width:230px;font-size:12px}#phone{width:86vw;right:7vw}}
+  #joy{position:absolute;left:22px;bottom:90px;width:112px;height:112px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.03);pointer-events:auto}
+  #joyKnob{position:absolute;left:36px;top:36px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.16)}
+  #tBtns{position:absolute;right:22px;bottom:90px;display:flex;flex-direction:column;gap:12px;pointer-events:auto}
+  .tbtn{width:58px;height:58px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:#ddd;font-size:10px;letter-spacing:.08em}
+  @media(max-width:760px){.panel{padding:22px 18px}.panel h1{font-size:26px;letter-spacing:.12em}.panel h2{font-size:9px;margin:10px 0 16px}.panel p{font-size:12.5px;line-height:1.6;margin:7px 0}.quote{font-size:17px!important;margin:14px 0!important}#learnedNote{font-size:11px;padding:10px 12px;margin:12px 0}.controls{font-size:11px;line-height:1.7;margin:14px 0;gap:2px 16px}.btn{padding:12px 30px;margin-top:14px}.small{font-size:10.5px}.overlay{padding:10px}#objective{max-width:210px;font-size:11.5px}#phone{width:88vw;right:6vw;height:70vh}#hint{display:none}}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="grain"></div><div id="vignette"></div><div id="fear"></div>
+<div id="wake"></div>
 
 <div id="hud">
   <div id="cross"></div>
@@ -78,16 +82,16 @@
   <div id="objective"><b>OBJECTIVE</b><span id="objText">Wake up.</span></div>
   <div id="inv"><b>INVENTORY</b><div id="invList">— empty hands —</div></div>
   <div id="unease">UNEASE<div id="uneaseBar"><div id="uneaseFill"></div></div></div>
-  <div id="hint">WASD move · Mouse look<br>E interact · F flashlight · TAB phone<br>SHIFT run (loud) · C sneak · ESC pause</div>
+  <div id="hint"><b>WASD</b> move · <b>Mouse</b> look<br><b>E</b> interact · <b>F</b> light · <b>TAB</b> phone<br><b>SHIFT</b> run · <b>C</b> sneak</div>
   <div id="toast"></div><div id="subtitle"></div>
 </div>
 
 <div id="phoneBadge">✉</div>
 <div id="phone">
-  <div id="phoneHeader"><div><b>YOUR CONTACT</b><br><span>● online</span></div><button id="phoneClose">CLOSE [TAB]</button></div>
-  <div id="phoneTime">3:17</div><div id="phoneDate">AM — Tomorrow</div>
+  <div id="phoneHeader"><div><b>YOUR CONTACT</b><br><span>● active now</span></div><button id="phoneClose">CLOSE</button></div>
+  <div id="phoneTime">3:17</div><div id="phoneDate">AM — TOMORROW</div>
   <div id="msgs"></div>
-  <div style="padding:8px;font-size:11px;color:#666;text-align:center;border-top:1px solid #222">You cannot reply. The number is yours.</div>
+  <div style="padding:9px;font-size:10px;color:#5f5a53;text-align:center;border-top:1px solid #17181c;letter-spacing:.1em">You cannot reply. The number is yours.</div>
 </div>
 
 <div id="touchUI">
@@ -98,34 +102,38 @@
 <div class="overlay" id="startScreen">
   <div class="panel">
     <h1>YOU WERE <span>NEVER</span> ALONE</h1>
-    <h2>A PSYCHOLOGICAL HORROR — CROuton ALPHA BUILD</h2>
-    <p class="cen" style="font-style:italic;color:#999">You wake at 3:17 AM in your own apartment. The front door is locked.<br>Your phone lights up. The message is from your own contact.</p>
-    <p class="cen" style="color:#c33;font-size:18px">“Don't turn around. I'm trying to keep it away from you.”</p>
-    <div id="learnedNote">It is watching how you play. What you check, where you hide, which rooms you trust — it learns. And it remembers between sessions.</div>
+    <h2>A PSYCHOLOGICAL HORROR</h2>
+    <p class="cen" style="color:#8f8578;font-size:13px;letter-spacing:.04em">3:17 AM. Your apartment. The door is locked from the inside.</p>
+    <p class="quote">“Don't turn around. I'm trying to keep it away from you.”</p>
+    <p class="cen small" style="margin-top:-8px">— sent from your own contact, tomorrow</p>
+    <div id="learnedNote">It watches how you play. What you check behind you. Which room you hide in. Which room you trust. It learns — and it remembers between nights.</div>
     <div class="controls">
-      <span><b>WASD / Mouse</b> — move / look</span><span><b>E</b> — interact, open, hide</span>
-      <span><b>F</b> — flashlight (once found)</span><span><b>TAB</b> — phone</span>
-      <span><b>SHIFT</b> — run (it hears running)</span><span><b>C</b> — sneak (quiet)</span>
+      <span><b>WASD</b> — move</span><span><b>Mouse</b> — look</span>
+      <span><b>E</b> — interact / hide</span><span><b>F</b> — flashlight</span>
+      <span><b>TAB</b> — phone</span><span><b>SHIFT / C</b> — run / sneak</span>
     </div>
-    <p class="small">Best played with headphones, in the dark, with mouse &amp; keyboard. No jumpscare chase — the fear is that you don't know what changed while you weren't looking. Find a way out. Or find the truth. Or let it take your place.</p>
+    <p class="small">Headphones. Darkness. No chase music, no jump-scare montage. Only the feeling that the room changed while you weren't looking.</p>
     <button class="btn" id="beginBtn">START GAME</button>
-    <p class="small" style="margin-top:10px">Click begins and locks the mouse. ESC pauses.</p>
+    <p class="small" style="margin-top:14px">Three ways out. None of them clean.</p>
   </div>
 </div>
 
 <div class="overlay" id="pauseScreen" style="display:none">
-  <div class="panel"><h1 style="font-size:26px">PAUSED</h1><p class="cen">It is still in the apartment.</p>
+  <div class="panel"><h1 style="font-size:30px;letter-spacing:.2em">PAUSED</h1><p class="cen small" style="margin:16px 0">It is still in the apartment.</p>
   <button class="btn" id="resumeBtn">KEEP GOING</button><br>
-  <button class="btn" id="restartBtn2" style="border-color:#555">RESTART NIGHT</button></div>
+  <button class="btn" id="restartBtn2" style="border-color:#3a3a3a;margin-top:10px">RESTART NIGHT</button></div>
 </div>
 
 <div class="overlay" id="endingScreen">
   <div class="panel"><div id="endingTitle"></div><div id="endingText"></div>
   <button class="btn" id="againBtn">WAKE UP AGAIN</button>
-  <p class="small" id="endingStats" style="margin-top:12px"></p></div>
+  <p class="small" id="endingStats" style="margin-top:16px"></p></div>
 </div>
 
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<div id="loading">LOADING THE APARTMENT</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module" src="./game.js"></script>
+<script>setTimeout(()=>{const l=document.getElementById('loading'); if(l) l.style.display='none';},4000);</script>
 </body>
 </html>
