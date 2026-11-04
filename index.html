@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>Elias — The Archive</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game-canvas"></canvas>
+      <div id="vignette"></div>
+      <div id="crosshair"></div>
+      <div id="hud">
+        <div id="hud-sector">SECTOR 07 // THE WRECKAGE</div>
+        <div id="hud-footprints">FOOTPRINTS: <span id="fp-count">0</span></div>
+      </div>
+      <div id="blink-hint">BLINK — SHIFT</div>
+      <div id="interact-hint">PRESS E</div>
+      <div id="overlay" class="overlay">
+        <div class="panel">
+          <h1 class="title">ELIAS</h1>
+          <p class="subtitle">The crash that never ended.</p>
+          <p class="story">
+            You are dead. You are remembering. The memory of the crash is all that is left of you,
+            and something in it is hungry.
+          </p>
+          <ul class="controls">
+            <li><b>WASD / Arrows</b> — move</li>
+            <li><b>Mouse</b> — look</li>
+            <li><b>Shift</b> — blink (gravity shifts)</li>
+            <li><b>E</b> — reach the Archive</li>
+          </ul>
+          <p class="truth-note">Blink to survive the memory. Follow the echoes. Reach the Archive. Accept the truth. Escape.</p>
+          <button id="start-btn" class="btn" aria-label="Start">Start</button>
+        </div>
+      </div>
+      <div id="overlay-accept" class="overlay hidden">
+        <div class="panel">
+          <h2 class="title small">THE TRUTH</h2>
+          <p id="accept-line-1">You were not a passenger.</p>
+          <p id="accept-line-2">You were the crash.</p>
+          <p id="accept-line-3">The thing that hunts you is the moment you stopped being alive.</p>
+        </div>
+      </div>
+      <div id="overlay-dead" class="overlay hidden">
+        <div class="panel">
+          <h2 class="title small">ELIAS</h2>
+          <p id="dead-line">The entity consumed your last footprint.</p>
+          <p id="dead-sub">You are not going to wake up.</p>
+          <button id="restart-btn" class="btn" aria-label="Restart">Restart</button>
+        </div>
+      </div>
+      <div id="overlay-win" class="overlay hidden">
+        <div class="panel">
+          <h2 class="title small">THE ARCHIVE</h2>
+          <p id="win-line">You accepted the truth.</p>
+          <p id="win-sub">The memory let you go.</p>
+          <button id="restart-win-btn" class="btn" aria-label="Restart">Restart</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>
