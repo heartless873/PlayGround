@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>You Were Never Alone — Crouton Alpha</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#d8d8d8;font-family:Georgia,'Times New Roman',serif}
+  #c{position:fixed;inset:0;display:block}
+  /* film grain + vignette */
+  #grain{position:fixed;inset:-50%;width:200%;height:200%;pointer-events:none;opacity:.07;z-index:5;background-image:repeating-conic-gradient(#fff 0 .0001%,transparent .0002% 12%);animation:g .4s steps(4) infinite}
+  @keyframes g{0%{transform:translate(0,0)}25%{transform:translate(-2%,1%)}50%{transform:translate(1%,-2%)}75%{transform:translate(-1%,2%)}100%{transform:translate(2%,-1%)}}
+  #vignette{position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,transparent 52%,rgba(0,0,0,.85) 100%);transition:opacity .6s}
+  #fear{position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(ellipse at center,transparent 30%,rgba(20,0,0,.9) 100%);opacity:0}
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:none}
+  #cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);box-shadow:0 0 4px #000}
+  #prompt{position:absolute;left:50%;top:58%;transform:translateX(-50%);background:rgba(0,0,0,.75);border:1px solid #555;padding:6px 14px;font-size:15px;letter-spacing:.5px;display:none;white-space:nowrap}
+  #objective{position:absolute;left:18px;top:16px;max-width:360px;background:rgba(0,0,0,.55);border-left:3px solid #8a0f0f;padding:10px 14px;font-size:14px;line-height:1.5}
+  #objective b{color:#c33;font-size:11px;letter-spacing:2px;display:block;margin-bottom:4px}
+  #inv{position:absolute;left:18px;bottom:16px;background:rgba(0,0,0,.55);padding:8px 12px;font-size:13px;line-height:1.6}
+  #inv b{color:#999;font-size:10px;letter-spacing:2px}
+  #unease{position:absolute;right:18px;top:16px;text-align:right;font-size:11px;letter-spacing:2px;color:#999}
+  #uneaseBar{width:160px;height:5px;background:#222;margin-top:4px;margin-left:auto;border:1px solid #444}
+  #uneaseFill{height:100%;width:0;background:#8a0f0f;transition:width .5s}
+  #hint{position:absolute;right:18px;bottom:16px;font-size:12px;color:#888;text-align:right;line-height:1.6}
+  #toast{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid #333;padding:12px 22px;font-size:17px;font-style:italic;text-align:center;max-width:80%;display:none}
+  #subtitle{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);font-size:15px;font-style:italic;color:#bbb;text-shadow:0 2px 4px #000;text-align:center;max-width:80%}
+  /* phone */
+  #phone{position:fixed;right:22px;bottom:22px;width:300px;height:520px;background:#0a0a0a;border:3px solid #333;border-radius:28px;z-index:20;display:none;flex-direction:column;box-shadow:0 0 40px #000;overflow:hidden}
+  #phoneHeader{background:#111;padding:12px 16px;border-bottom:1px solid #222;display:flex;justify-content:space-between;align-items:center}
+  #phoneHeader b{font-size:14px;letter-spacing:1px}
+  #phoneHeader span{font-size:11px;color:#c33}
+  #phoneTime{text-align:center;font-size:28px;padding:10px 0 2px}
+  #phoneDate{text-align:center;font-size:11px;color:#888;padding-bottom:8px}
+  #msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:#050505}
+  .msg{align-self:flex-start;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px 12px 12px 2px;padding:8px 12px;font-size:13px;line-height:1.45;max-width:88%}
+  .msg .t{font-size:10px;color:#c33;display:block;margin-top:4px}
+  .msg.me{align-self:flex-end;background:#12203a;border-radius:12px 12px 2px 12px}
+  .sys{align-self:center;font-size:10px;color:#666;text-align:center}
+  #phoneClose{background:#222;color:#ddd;border:1px solid #444;padding:8px;cursor:pointer;font-family:inherit}
+  #phoneBadge{position:fixed;right:26px;bottom:26px;width:52px;height:52px;border-radius:50%;background:#111;border:2px solid #8a0f0f;color:#fff;z-index:19;display:none;align-items:center;justify-content:center;font-size:22px;cursor:pointer;pointer-events:auto}
+  #phoneBadge.has{animation:pulse 1s infinite}
+  @keyframes pulse{50%{box-shadow:0 0 18px #f00}}
+  /* overlays */
+  .overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0d0d0d 0%,#000 80%);padding:20px}
+  .panel{max-width:720px;width:100%;max-height:92vh;overflow-y:auto;border:1px solid #333;background:rgba(5,5,5,.92);padding:36px 40px;text-align:center}
+  .panel h1{font-size:38px;letter-spacing:4px;font-weight:normal;color:#e8e8e8}
+  .panel h1 span{color:#8a0f0f}
+  .panel h2{font-size:13px;letter-spacing:3px;color:#888;font-weight:normal;margin:8px 0 20px}
+  .panel p{font-size:15px;line-height:1.7;color:#bbb;text-align:left;margin:10px 0}
+  .panel .cen{text-align:center}
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;text-align:left;font-size:13px;color:#999;margin:16px 0;line-height:1.7}
+  .controls b{color:#ddd;font-family:monospace}
+  .btn{pointer-events:auto;background:#1a0505;color:#eee;border:1px solid #8a0f0f;padding:13px 38px;font-size:16px;letter-spacing:2px;cursor:pointer;font-family:inherit;margin-top:16px}
+  .btn:hover{background:#8a0f0f}
+  .small{font-size:12px;color:#777;line-height:1.6}
+  #learnedNote{border:1px dashed #444;padding:10px;margin:14px 0;font-size:13px;color:#999;font-style:italic}
+  #endingScreen{display:none}
+  #endingTitle{font-size:30px;letter-spacing:3px;margin-bottom:14px}
+  #endingText{font-size:16px;line-height:1.9;white-space:pre-wrap;text-align:left;color:#ccc}
+  /* touch */
+  #touchUI{display:none;position:fixed;inset:0;z-index:15;pointer-events:none}
+  #joy{position:absolute;left:20px;bottom:80px;width:110px;height:110px;border-radius:50%;border:2px solid #555;background:rgba(255,255,255,.06);pointer-events:auto}
+  #joyKnob{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.25)}
+  #tBtns{position:absolute;right:20px;bottom:80px;display:flex;flex-direction:column;gap:10px;pointer-events:auto}
+  .tbtn{width:58px;height:58px;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid #777;color:#fff;font-size:12px}
+  @media(max-width:700px){.panel{padding:22px}.panel h1{font-size:26px}.controls{grid-template-columns:1fr}#objective{max-width:230px;font-size:12px}#phone{width:86vw;right:7vw}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="grain"></div><div id="vignette"></div><div id="fear"></div>
+
+<div id="hud">
+  <div id="cross"></div>
+  <div id="prompt"></div>
+  <div id="objective"><b>OBJECTIVE</b><span id="objText">Wake up.</span></div>
+  <div id="inv"><b>INVENTORY</b><div id="invList">— empty hands —</div></div>
+  <div id="unease">UNEASE<div id="uneaseBar"><div id="uneaseFill"></div></div></div>
+  <div id="hint">WASD move · Mouse look<br>E interact · F flashlight · TAB phone<br>SHIFT run (loud) · C sneak · ESC pause</div>
+  <div id="toast"></div><div id="subtitle"></div>
+</div>
+
+<div id="phoneBadge">✉</div>
+<div id="phone">
+  <div id="phoneHeader"><div><b>YOUR CONTACT</b><br><span>● online</span></div><button id="phoneClose">CLOSE [TAB]</button></div>
+  <div id="phoneTime">3:17</div><div id="phoneDate">AM — Tomorrow</div>
+  <div id="msgs"></div>
+  <div style="padding:8px;font-size:11px;color:#666;text-align:center;border-top:1px solid #222">You cannot reply. The number is yours.</div>
+</div>
+
+<div id="touchUI">
+  <div id="joy"><div id="joyKnob"></div></div>
+  <div id="tBtns"><button class="tbtn" id="tInteract">USE</button><button class="tbtn" id="tLight">LIGHT</button><button class="tbtn" id="tPhone">PHONE</button></div>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="panel">
+    <h1>YOU WERE <span>NEVER</span> ALONE</h1>
+    <h2>A PSYCHOLOGICAL HORROR — CROuton ALPHA BUILD</h2>
+    <p class="cen" style="font-style:italic;color:#999">You wake at 3:17 AM in your own apartment. The front door is locked.<br>Your phone lights up. The message is from your own contact.</p>
+    <p class="cen" style="color:#c33;font-size:18px">“Don't turn around. I'm trying to keep it away from you.”</p>
+    <div id="learnedNote">It is watching how you play. What you check, where you hide, which rooms you trust — it learns. And it remembers between sessions.</div>
+    <div class="controls">
+      <span><b>WASD / Mouse</b> — move / look</span><span><b>E</b> — interact, open, hide</span>
+      <span><b>F</b> — flashlight (once found)</span><span><b>TAB</b> — phone</span>
+      <span><b>SHIFT</b> — run (it hears running)</span><span><b>C</b> — sneak (quiet)</span>
+    </div>
+    <p class="small">Best played with headphones, in the dark, with mouse &amp; keyboard. No jumpscare chase — the fear is that you don't know what changed while you weren't looking. Find a way out. Or find the truth. Or let it take your place.</p>
+    <button class="btn" id="beginBtn">START GAME</button>
+    <p class="small" style="margin-top:10px">Click begins and locks the mouse. ESC pauses.</p>
+  </div>
+</div>
+
+<div class="overlay" id="pauseScreen" style="display:none">
+  <div class="panel"><h1 style="font-size:26px">PAUSED</h1><p class="cen">It is still in the apartment.</p>
+  <button class="btn" id="resumeBtn">KEEP GOING</button><br>
+  <button class="btn" id="restartBtn2" style="border-color:#555">RESTART NIGHT</button></div>
+</div>
+
+<div class="overlay" id="endingScreen">
+  <div class="panel"><div id="endingTitle"></div><div id="endingText"></div>
+  <button class="btn" id="againBtn">WAKE UP AGAIN</button>
+  <p class="small" id="endingStats" style="margin-top:12px"></p></div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="module" src="./game.js"></script>
+</body>
+</html>
